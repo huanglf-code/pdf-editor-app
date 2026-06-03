@@ -53,11 +53,12 @@ jobs:
         find . -name "*.apk" -type f 2>/dev/null || echo "No APK found"
         echo "=== Build directory structure ==="
         ls -la build/app/outputs/ 2>/dev/null || echo "build/app/outputs not found"
+        ls -la build/app/outputs/flutter-apk/ 2>/dev/null || echo "flutter-apk not found"
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: app-release
-        path: build/app/outputs/flutter-apk/
+        path: build/app/outputs/flutter-apk/*.apk
         if-no-files-found: warn
