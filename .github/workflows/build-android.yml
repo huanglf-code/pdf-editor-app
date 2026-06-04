@@ -48,7 +48,20 @@ jobs:
       - run: ./patches/post/patch_rust_versions.sh
 
       - name: Build APK
-        run: flutter build apk
+        run: flutter build apk 2>&1 | tee build.log
+
+      - name: Check if APK was created
+        run: |
+          if find . -name "*.apk" -type f 2>/dev/null | grep -q .; then
+            echo "✓ APK found!"
+            find . -name "*.apk" -type f
+          else
+            echo "✗ APK NOT FOUND!"
+            echo ""
+            echo "=== Last 200 lines of build log ==="
+            tail -200 build.log
+            exit 1
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
