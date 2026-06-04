@@ -14,8 +14,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          submodules: recursive
 
       - uses: "./.github/shared_workflows/install_apt_dependencies"
 
@@ -33,6 +31,8 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: true
 
       - name: Setup Rust
         uses: moonrepo/setup-rust@v1
@@ -47,19 +47,30 @@ jobs:
       - run: flutter pub get
       - run: ./patches/post/patch_rust_versions.sh
 
-      - name: Build APK
+      - name: Build apk
         run: flutter build apk --verbose 2>&1 | tee build.log
-        continue-on-error: true
 
-      - name: Show build errors
-        if: failure()
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-log
+          path: build.log
+
+      - name: Rename apk
+        if: success()
+        id: rename_apk
         run: |
-          echo "=== BUILD FAILED - Last 300 lines of output ==="
-          tail -300 build.log
+          buildName=$(grep -oP "(?<=buildName = ').*(?=')" lib/data/version.dart)
+          apkName="Saber_v${buildName}.apk"
+          echo "apkName=$apkName" >> $GITHUB_OUTPUT
 
-      - name: Upload APK artifact
+          mkdir -p output
+          mv build/app/outputs/flutter-apk/app-release.apk output/$apkName
+
+      - name: Upload artifact
+        if: success()
         uses: actions/upload-artifact@v7
         with:
           name: Saber-Android
-          path: build/
-          if-no-files-found: warn
+          path: output/${{ steps.rename_apk.outputs.apkName }}
