@@ -50,17 +50,9 @@ jobs:
       - name: Build APK
         run: flutter build apk
 
-      - name: List build outputs
-        run: |
-          echo "=== Checking for APK files ==="
-          find . -name "*.apk" -type f 2>/dev/null || echo "No APK found"
-          echo ""
-          echo "=== build/app/outputs directory ==="
-          ls -laR build/app/outputs/ 2>/dev/null || echo "Directory not found"
-
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
           name: Saber-Android
-          path: build/app/outputs/flutter-apk/
+          path: build/
           if-no-files-found: warn
