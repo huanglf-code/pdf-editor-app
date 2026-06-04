@@ -11,24 +11,24 @@ RUN apt-get update && \
         wget tar bash && \
     apt-get clean
 
-# Create `nonroot` user
+# Create `nonroot` user and prepare Flutter under that user
 RUN useradd -u 1000 -m nonroot
-USER nonroot
-
-# Install Flutter
 RUN mkdir -p /home/nonroot/.pub-cache/bin/
 ENV FLUTTER_ROOT=/home/nonroot/flutter
 ENV PUB_CACHE=/home/nonroot/.pub-cache
 ENV PATH="/home/nonroot/flutter/bin:/home/nonroot/.pub-cache/bin:$PATH"
 # This ADD command invalidates the Docker cache when a new Flutter release is available
 ADD https://raw.githubusercontent.com/flutter/flutter/refs/heads/stable/CHANGELOG.md /tmp/flutter-CHANGELOG.md
-RUN git clone https://github.com/flutter/flutter.git /home/nonroot/flutter --branch stable
+RUN git clone https://github.com/flutter/flutter.git /home/nonroot/flutter --branch stable && \
+    chown -R nonroot:nonroot /home/nonroot
+USER nonroot
 RUN flutter precache --universal
+USER root
 
 # Install Android SDK/NDK (pin versions)
 ENV ANDROID_SDK_ROOT=/opt/android-sdk \
     ANDROID_HOME=/opt/android-sdk
-RUN sudo mkdir -p /opt/android-sdk && sudo chown -R nonroot:nonroot /opt/android-sdk
+RUN mkdir -p /opt/android-sdk && chown -R nonroot:nonroot /opt/android-sdk
 RUN mkdir -p $ANDROID_SDK_ROOT/cmdline-tools && \
     cd $ANDROID_SDK_ROOT && \
     wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip && \
@@ -43,13 +43,15 @@ RUN yes | sdkmanager --licenses >/dev/null && \
       "build-tools;34.0.0" \
       "ndk;26.1.10909125"
 
-# Install Rust with targets (using rustup via Flutter image toolchain assumptions)
+USER nonroot
+# Install Rust with targets (under nonroot home)
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
     /home/nonroot/.cargo/bin/rustup target add \
       aarch64-linux-android \
       armv7-linux-androideabi \
       x86_64-linux-android
 ENV PATH="/home/nonroot/.cargo/bin:$PATH"
+USER root
 
 ARG APP_PATH
 WORKDIR ${APP_PATH}
