@@ -64,9 +64,29 @@ jobs:
           name: build-log-debug
           path: build-debug.log
 
+      - name: List debug APK outputs
+        if: always()
+        run: |
+          echo "=== Debug APK files under build/ ==="
+          find build -type f -name "*.apk" -print || echo "No APK files found"
+
+      - name: Rename debug apk
+        id: rename_debug
+        run: |
+          buildName=$(grep -oP "(?<=buildName = ').*(?=')" lib/data/version.dart || echo "unknown")
+          mkdir -p output
+          apk_file=$(find build/app -maxdepth 7 -type f -name "*.apk" -print -quit)
+          if [ -z "$apk_file" ]; then
+            echo "No debug APK found under build/app" >&2
+            exit 1
+          fi
+          out="output/Saber_Debug_v${buildName}.apk"
+          cp "$apk_file" "$out"
+          echo "apk_path=$out" >> $GITHUB_OUTPUT
+
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v7
         with:
           name: Saber-Android-Debug
-          path: build/app/outputs/flutter-apk/*.apk
-          if-no-files-found: warn
+          path: ${{ steps.rename_debug.outputs.apk_path }}
+          if-no-files-found: error
