@@ -47,26 +47,8 @@ jobs:
       - run: flutter pub get
       - run: ./patches/post/patch_rust_versions.sh
 
-      - name: Build APK (debug)
-        run: flutter build apk --verbose 2>&1 | tee build.log
-      
-      - name: Show build log on failure
-        if: failure()
-        run: tail -300 build.log
-
-      - name: Find APK files
-        run: |
-          echo "=== Looking for APK files ==="
-          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
-          echo ""
-          echo "=== Build directory structure ==="
-          ls -la build/ 2>/dev/null || echo "build/ not found"
-          echo ""
-          echo "=== app directory ==="
-          ls -la build/app/ 2>/dev/null || echo "build/app/ not found"
-          echo ""
-          echo "=== outputs directory ==="
-          ls -la build/app/outputs/ 2>/dev/null || echo "build/app/outputs/ not found"
+      - name: Build APK
+        run: flutter build apk
 
       - name: Rename APK
         id: rename_apk
@@ -76,15 +58,7 @@ jobs:
           echo "apkName=$apkName" >> $GITHUB_OUTPUT
 
           mkdir -p output
-          # Try to find the APK file anywhere
-          apk_file=$(find . -name "*.apk" -type f 2>/dev/null | head -1)
-          if [ -n "$apk_file" ]; then
-            cp "$apk_file" output/$apkName
-            echo "Found APK at: $apk_file"
-          else
-            echo "APK file not found!"
-            exit 1
-          fi
+          mv build/app/outputs/flutter-apk/app-release.apk output/$apkName
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
