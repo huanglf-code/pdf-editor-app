@@ -10,7 +10,7 @@ jobs:
   build-android:
     name: Build APK
     runs-on: ubuntu-latest
-    container: ghcr.io/${{ github.repository_owner }}/saber-android-buildenv:latest
+    container: ghcr.io/cirruslabs/flutter:stable-android
     timeout-minutes: 60
     steps:
       - name: Checkout code
@@ -133,7 +133,7 @@ jobs:
   build-android-debug:
     name: Build APK (Debug)
     runs-on: ubuntu-latest
-    container: ghcr.io/${{ github.repository_owner }}/saber-android-buildenv:latest
+    container: ghcr.io/cirruslabs/flutter:stable-android
     timeout-minutes: 60
     steps:
       - name: Checkout code
