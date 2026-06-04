@@ -63,6 +63,18 @@ jobs:
           echo "=== APK files under build/ ==="
           find build -name "*.apk" -print || echo "No APK files found"
 
+      - name: Show build log if no APK
+        if: always()
+        run: |
+          if [ ! -f build.log ]; then
+            echo "No build.log found"
+            exit 0
+          fi
+          if ! find build -name "*.apk" -print -quit 2>/dev/null | grep -q .; then
+            echo "=== APK not found, showing last 500 lines of build.log ==="
+            tail -500 build.log
+          fi
+
       - name: Rename apk
         if: success()
         id: rename_apk
