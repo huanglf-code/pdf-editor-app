@@ -50,6 +50,14 @@ jobs:
       - name: Build APK
         run: flutter build apk --verbose 2>&1 | tail -500
 
+      - name: Find APK
+        run: |
+          echo "=== Looking for APK files ==="
+          find . -name "*.apk" -type f 2>/dev/null
+          echo ""
+          echo "=== Build outputs directory ==="
+          ls -la build/app/outputs/ 2>/dev/null || echo "build/app/outputs/ not found"
+
       - name: Rename APK
         id: rename_apk
         run: |
@@ -58,7 +66,14 @@ jobs:
           echo "apkName=$apkName" >> $GITHUB_OUTPUT
 
           mkdir -p output
-          mv build/app/outputs/flutter-apk/app-release.apk output/$apkName
+          # Find the APK file
+          apk_file=$(find . -name "*.apk" -type f 2>/dev/null | head -1)
+          if [ -z "$apk_file" ]; then
+            echo "ERROR: APK file not found!"
+            exit 1
+          fi
+          cp "$apk_file" output/$apkName
+          echo "Copied APK from: $apk_file"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
