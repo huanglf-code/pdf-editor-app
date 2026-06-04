@@ -54,6 +54,20 @@ jobs:
         if: failure()
         run: tail -300 build.log
 
+      - name: Find APK files
+        run: |
+          echo "=== Looking for APK files ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
+          echo ""
+          echo "=== Build directory structure ==="
+          ls -la build/ 2>/dev/null || echo "build/ not found"
+          echo ""
+          echo "=== app directory ==="
+          ls -la build/app/ 2>/dev/null || echo "build/app/ not found"
+          echo ""
+          echo "=== outputs directory ==="
+          ls -la build/app/outputs/ 2>/dev/null || echo "build/app/outputs/ not found"
+
       - name: Rename APK
         id: rename_apk
         run: |
@@ -62,14 +76,13 @@ jobs:
           echo "apkName=$apkName" >> $GITHUB_OUTPUT
 
           mkdir -p output
-          # Try to find the APK file (could be app-debug.apk or app-release.apk)
-          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
-            mv build/app/outputs/flutter-apk/app-release.apk output/$apkName
-          elif [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
-            mv build/app/outputs/flutter-apk/app-debug.apk output/$apkName
+          # Try to find the APK file anywhere
+          apk_file=$(find . -name "*.apk" -type f 2>/dev/null | head -1)
+          if [ -n "$apk_file" ]; then
+            cp "$apk_file" output/$apkName
+            echo "Found APK at: $apk_file"
           else
             echo "APK file not found!"
-            ls -la build/app/outputs/flutter-apk/ || echo "flutter-apk directory not found"
             exit 1
           fi
 
