@@ -45,8 +45,14 @@ jobs:
       - run: ./patches/pre/remove_dev_dependencies.sh
       - run: ./patches/pre/remove_linux_dependencies.sh
       - run: flutter pub get
-      - name: Generate code (build_runner)
-        run: dart run build_runner build --delete-conflicting-outputs
+      - name: Generate code (build_runner, if present)
+        run: |
+          if grep -q "build_runner" pubspec.lock; then
+            echo "build_runner found in pubspec.lock - running codegen"
+            flutter pub run build_runner build --delete-conflicting-outputs
+          else
+            echo "build_runner not found - skipping code generation"
+          fi
       - run: ./patches/post/patch_rust_versions.sh
 
       - name: Build apk
