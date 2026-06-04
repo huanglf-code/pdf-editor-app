@@ -1,67 +1,65 @@
 name: Build Android APK
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  build:
+  build-android:
+    name: Build APK
     runs-on: ubuntu-latest
-
+    timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - uses: "./.github/shared_workflows/install_apt_dependencies"
 
-    - name: Setup Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - name: Setup Flutter
+        uses: adil192/setup-flutter-submodule@v3
+        with:
+          flutter-path: submodules/flutter
+          no-save-caches: true
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.44.0'
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "microsoft"
+          java-version: "21"
 
-    - name: Get dependencies
-      run: flutter pub get
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
 
-    - name: Generate code
-      run: flutter pub run build_runner build --release
+      - name: Setup Rust
+        uses: moonrepo/setup-rust@v1
+        with:
+          targets: armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android
 
-    - name: Diagnose environment
-      run: |
-        echo "=== Rust version ==="
-        rustc --version
-        cargo --version
-        echo "=== Flutter version ==="
-        flutter --version
-        echo "=== Dart version ==="
-        dart --version
-        echo "=== Java version ==="
-        java -version
-        echo "=== Android SDK ==="
-        ls -la $ANDROID_HOME/ndk/ || echo "NDK not found"
+      - name: Disable Flutter CLI animations
+        run: flutter config --no-cli-animations
 
-    - name: Build APK
-      run: flutter build apk --release 2>&1 | tee build.log
+      - run: ./patches/pre/remove_dev_dependencies.sh
+      - run: ./patches/pre/remove_linux_dependencies.sh
+      - run: flutter pub get
+      - run: ./patches/post/patch_rust_versions.sh
 
-    - name: Find APK
-      run: |
-        echo "=== Looking for APK files ==="
-        find . -name "*.apk" -type f 2>/dev/null || echo "No APK found"
-        echo "=== Build directory structure ==="
-        ls -la build/app/outputs/ 2>/dev/null || echo "build/app/outputs not found"
-        ls -la build/app/outputs/flutter-apk/ 2>/dev/null || echo "flutter-apk not found"
+      - name: Build APK
+        run: flutter build apk --release
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: app-release
-        path: build/app/outputs/flutter-apk/*.apk
-        if-no-files-found: warn
+      - name: Rename APK
+        id: rename_apk
+        run: |
+          buildName=$(grep -oP "(?<=buildName = ').*(?=')" lib/data/version.dart)
+          apkName="Saber_v${buildName}.apk"
+          echo "apkName=$apkName" >> $GITHUB_OUTPUT
+
+          mkdir -p output
+          mv build/app/outputs/flutter-apk/app-release.apk output/$apkName
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Saber-Android
+          path: output/${{ steps.rename_apk.outputs.apkName }}
