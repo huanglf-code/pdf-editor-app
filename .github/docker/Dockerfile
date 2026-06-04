@@ -30,12 +30,13 @@ ENV ANDROID_SDK_ROOT=/opt/android-sdk \
     ANDROID_HOME=/opt/android-sdk
 RUN mkdir -p /opt/android-sdk && chown -R nonroot:nonroot /opt/android-sdk
 RUN mkdir -p $ANDROID_SDK_ROOT/cmdline-tools && \
-    cd $ANDROID_SDK_ROOT && \
+    cd $ANDROID_SDK_ROOT/cmdline-tools && \
     wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip && \
-    mkdir -p cmdline-tools/latest && \
-    unzip -q cmdline-tools.zip -d cmdline-tools/latest && \
-    rm cmdline-tools.zip
-ENV PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+    unzip -q cmdline-tools.zip && \
+    rm cmdline-tools.zip && \
+    mv cmdline-tools latest
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+ENV PATH="$JAVA_HOME/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
 RUN yes | sdkmanager --licenses >/dev/null && \
     sdkmanager --install \
       "platform-tools" \
