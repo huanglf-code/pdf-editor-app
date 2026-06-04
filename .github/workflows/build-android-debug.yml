@@ -1,0 +1,72 @@
+name: Build Android APK (Debug Only)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android-debug:
+    name: Build APK (Debug)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - uses: "./.github/shared_workflows/install_apt_dependencies"
+
+      - name: Setup Flutter
+        uses: adil192/setup-flutter-submodule@v3
+        with:
+          flutter-path: submodules/flutter
+          no-save-caches: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "microsoft"
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: true
+
+      - name: Setup Rust
+        uses: moonrepo/setup-rust@v1
+        with:
+          targets: armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android
+
+      - name: Disable Flutter CLI animations
+        run: flutter config --no-cli-animations
+
+      - run: ./patches/pre/remove_dev_dependencies.sh
+      - run: ./patches/pre/remove_linux_dependencies.sh
+      - run: flutter pub get
+
+      - name: Generate code (build_runner, if present)
+        run: |
+          if grep -q "build_runner" pubspec.lock; then
+            echo "build_runner found in pubspec.lock - running codegen"
+            flutter pub run build_runner build --delete-conflicting-outputs
+          else
+            echo "build_runner not found - skipping code generation"
+          fi
+
+      - run: ./patches/post/patch_rust_versions.sh
+
+      - name: Build debug APK
+        run: flutter build apk --debug --verbose 2>&1 | tee build-debug.log
+
+      - name: Upload debug build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-log-debug
+          path: build-debug.log
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Saber-Android-Debug
+          path: build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: warn
