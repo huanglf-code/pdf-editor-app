@@ -1,4 +1,4 @@
-name: write_pdf
+name: saber
 description: High-performance PDF editor with handwriting and AI Q&A
 
 # The following line prevents the package from being accidentally published to
