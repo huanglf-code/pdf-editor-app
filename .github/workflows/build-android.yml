@@ -46,7 +46,7 @@ jobs:
       - run: ./patches/post/patch_rust_versions.sh
 
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --verbose 2>&1 | tail -200
 
       - name: Rename APK
         id: rename_apk
