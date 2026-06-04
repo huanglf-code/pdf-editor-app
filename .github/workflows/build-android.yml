@@ -47,8 +47,17 @@ jobs:
       - run: flutter pub get
       - run: ./patches/post/patch_rust_versions.sh
 
+      - name: Create signing key
+        run: |
+          mkdir -p android
+          keytool -genkey -v -keystore android/release.keystore -keyalias release -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=Saber,O=Saber,C=US"
+          echo "storePassword=password" > android/key.properties
+          echo "keyPassword=password" >> android/key.properties
+          echo "keyAlias=release" >> android/key.properties
+          echo "storeFile=release.keystore" >> android/key.properties
+
       - name: Build APK
-        run: flutter build apk --release --verbose 2>&1 | tail -200
+        run: flutter build apk --release
 
       - name: Rename APK
         id: rename_apk
