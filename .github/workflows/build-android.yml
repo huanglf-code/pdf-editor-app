@@ -48,11 +48,19 @@ jobs:
       - run: ./patches/post/patch_rust_versions.sh
 
       - name: Build APK
-        run: flutter build apk --verbose 2>&1 | tail -500
+        run: flutter build apk
+
+      - name: List build outputs
+        run: |
+          echo "=== Checking for APK files ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK found"
+          echo ""
+          echo "=== build/app/outputs directory ==="
+          ls -laR build/app/outputs/ 2>/dev/null || echo "Directory not found"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
           name: Saber-Android
-          path: build/app/outputs/flutter-apk/*.apk
+          path: build/app/outputs/flutter-apk/
           if-no-files-found: warn
