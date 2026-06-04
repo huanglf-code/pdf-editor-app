@@ -53,10 +53,13 @@ jobs:
       - name: Find APK
         run: |
           echo "=== Looking for APK files ==="
-          find . -name "*.apk" -type f 2>/dev/null
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK found with find"
           echo ""
           echo "=== Build outputs directory ==="
-          ls -la build/app/outputs/ 2>/dev/null || echo "build/app/outputs/ not found"
+          ls -laR build/app/outputs/ 2>/dev/null || echo "build/app/outputs/ not found"
+          echo ""
+          echo "=== Full build directory ==="
+          ls -laR build/ 2>/dev/null | head -100
 
       - name: Rename APK
         id: rename_apk
