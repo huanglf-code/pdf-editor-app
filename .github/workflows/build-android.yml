@@ -47,17 +47,8 @@ jobs:
       - run: flutter pub get
       - run: ./patches/post/patch_rust_versions.sh
 
-      - name: Create signing key
-        run: |
-          mkdir -p android
-          keytool -genkey -v -keystore android/release.keystore -keyalias release -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=Saber,O=Saber,C=US"
-          echo "storePassword=password" > android/key.properties
-          echo "keyPassword=password" >> android/key.properties
-          echo "keyAlias=release" >> android/key.properties
-          echo "storeFile=release.keystore" >> android/key.properties
-
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Build APK (debug)
+        run: flutter build apk
 
       - name: Rename APK
         id: rename_apk
@@ -67,7 +58,16 @@ jobs:
           echo "apkName=$apkName" >> $GITHUB_OUTPUT
 
           mkdir -p output
-          mv build/app/outputs/flutter-apk/app-release.apk output/$apkName
+          # Try to find the APK file (could be app-debug.apk or app-release.apk)
+          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
+            mv build/app/outputs/flutter-apk/app-release.apk output/$apkName
+          elif [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
+            mv build/app/outputs/flutter-apk/app-debug.apk output/$apkName
+          else
+            echo "APK file not found!"
+            ls -la build/app/outputs/flutter-apk/ || echo "flutter-apk directory not found"
+            exit 1
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
